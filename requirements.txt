@@ -1,1 +1,4 @@
 fastapi
+sqlalchemy
+dotenv
+psycopg2
