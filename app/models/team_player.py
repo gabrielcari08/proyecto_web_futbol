@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, ForeignKey, Boolean, String
 from sqlalchemy.orm import declarative_base
-from app.database import Base
+from app.core.database import Base
 
 class UserTeamPlayer(Base):
     __tablename__ = "user_team_players"

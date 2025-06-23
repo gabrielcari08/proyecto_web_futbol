@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, DateTime, Boolean
 from sqlalchemy.orm import declarative_base
 from datetime import datetime
-from app.database import Base
+from app.core.database import Base
 
 class TournamentDate(Base):
     __tablename__ = "matchdays" 

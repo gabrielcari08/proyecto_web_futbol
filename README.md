@@ -19,6 +19,7 @@
 - main: rama principal del proyecto.
 - dev: rama de desarrollo principal.
 - db-setup: rama dedicada a la producción y configuración de la base de datos.
+- fastapi-setup: rama que se dedica a la estructura para levantar fastapi
 
 ### Docker
 
