@@ -1,4 +1,6 @@
-from pydantic import BaseSettings
+# Cambio de pydantic_settings
+from pydantic_settings import BaseSettings
+# Por: pydantic
 
 class Settings(BaseSettings):
     postgres_user: str
