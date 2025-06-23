@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, Boolean, Float, ForeignKey
 from sqlalchemy.orm import declarative_base
-from app.database import Base
+from app.core.database import Base
 
 class PlayerPerformance(Base):
     __tablename__ = "performances"

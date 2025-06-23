@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, ForeignKey, String
 from sqlalchemy.orm import declarative_base
-from app.database import Base
+from app.core.database import Base
 
 class RegionalRanking(Base):
     __tablename__ = "regional_rankings"
