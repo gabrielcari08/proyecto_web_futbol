@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, Float, ForeignKey, String, UniqueConstraint
 from sqlalchemy.orm import declarative_base, relationship
-from app.database import Base
+from app.core.database import Base
 
 class UserTeam(Base):
     __tablename__ = "user_teams"

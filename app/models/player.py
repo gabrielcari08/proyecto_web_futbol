@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, Float, Boolean, Enum
 from sqlalchemy.orm import declarative_base
 import enum
-from app.database import Base
+from app.core.database import Base
 
 class PosicionEnum(str, enum.Enum):
     goalkeeper = "Arquero"
