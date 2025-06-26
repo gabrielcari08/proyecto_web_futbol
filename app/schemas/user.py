@@ -1,4 +1,5 @@
 from pydantic import BaseModel, EmailStr
+from app.models.user import RegionEnum
 
 #Esquemas de User
 
@@ -7,7 +8,7 @@ class UserCreate(BaseModel):
     username: str
     email: EmailStr
     password: str
-    region: str
+    region: RegionEnum #<- Ahora es de tip Enum
 
 #Clase que define el esquema de lo que se le pedira a un usuario cuando inicie sesion.
 class UserLogin(BaseModel):
