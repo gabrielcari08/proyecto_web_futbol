@@ -21,3 +21,8 @@ class UserResponse(BaseModel):
 
     class Config:
         orm_mode = True
+        
+#Este esquema define cómo será la respuesta con el token
+class Token(BaseModel):
+    access_token: str
+    token_type: str
