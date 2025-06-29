@@ -4,6 +4,7 @@ from app.schemas.user import UserCreate, UserLogin, UserResponse
 from app.core.database import SessionLocal
 from app.models.user import User
 from app.auth.hashing import Hash
+from app.auth.dependency import get_current_user
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
@@ -53,3 +54,10 @@ async def register(user: UserCreate, db: Session = Depends(get_db)):
     
     #Retornamos el usuario creado.
     return new_user
+
+#Endpoint para que un usuario autenticado pueda ver su perfil.
+@router.get("/profile", response_model=UserResponse)
+async def view_profile(current_user: User = Depends(get_current_user),
+                       db: Session = Depends(get_db)):
+    
+    return current_user
