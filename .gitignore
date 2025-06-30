@@ -2,4 +2,6 @@ env
 .env
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
 mock_data.py
