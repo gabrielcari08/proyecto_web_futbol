@@ -6,11 +6,13 @@
 
 ## Tecnologías usadas (hasta el momento)
 
-- Backend: Python 3.11, SQLAlchemy
+- Backend: Python 3.11, FastAPI
 - Base de datos: PostgreSQL 16 (vía Docker)
 - ORM: SQLAlchemy
+- Validaciones: Pydantic / pydantic-settings
 - Entorno de trabajo: Docker + entorno virtual local
 - Herramientas: DBeaver, VSCode, GitHub
+- Documentación automática: Swagger (FastAPI)
 
 ## Configuración del entorno
 
@@ -20,6 +22,8 @@
 - dev: rama de desarrollo principal.
 - db-setup: rama dedicada a la producción y configuración de la base de datos.
 - fastapi-setup: rama que se dedica a la estructura para levantar fastapi
+- user-setup: rama en donde construi el registro y autenticacion de usuarios
+- team-setup: rama que sirve para el armado de equipos por el usuario.
 
 ### Docker
 
@@ -58,23 +62,17 @@ POSTGRES_DB=titulares_db
 ```
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
-import os
-from dotenv import load_dotenv
+from app.core.config import settings
 
-load_dotenv()
-
-DB_USER = os.getenv("POSTGRES_USER")
-DB_PASSWORD = os.getenv("POSTGRES_PASSWORD")
-DB_NAME = os.getenv("POSTGRES_DB")
-DB_HOST = "localhost"
-
-DATABASE_URL = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:5432/{DB_NAME}"
+DATABASE_URL = f"postgresql://{settings.postgres_user}:{settings.postgres_password}@{settings.postgres_host}:{settings.postgres_port}/{settings.postgres_db}"
 
 engine = create_engine(DATABASE_URL, echo=True)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-Base = declarative_base()  
+Base = declarative_base() #<- Necesario para que los modelos funcionen. 
 ```
+
+### Configuracion por entorno (archivo ***config.py***)
 
 ### Creación de Tablas (archivo ***create_tables.py***)
 
