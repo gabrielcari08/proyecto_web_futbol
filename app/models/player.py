@@ -1,5 +1,4 @@
 from sqlalchemy import Column, Integer, String, Float, Boolean, Enum
-from sqlalchemy.orm import declarative_base
 import enum
 from app.core.database import Base
 

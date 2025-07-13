@@ -1,11 +1,11 @@
 from fastapi import FastAPI
-from app.routers import user, auth, players, team
+from app.routers import user, auth, player, team
 
 app = FastAPI()
 
 app.include_router(user.router)
 app.include_router(auth.router)
-app.include_router(players.router)
+app.include_router(player.router)
 app.include_router(team.router)
 
 @app.get("/")

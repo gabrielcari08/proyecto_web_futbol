@@ -1,5 +1,4 @@
-from sqlalchemy import Column, Integer, ForeignKey, Boolean, String
-from sqlalchemy.orm import declarative_base
+from sqlalchemy import Column, Integer, ForeignKey, String
 from app.core.database import Base
 
 class UserTeamPlayer(Base):

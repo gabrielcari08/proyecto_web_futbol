@@ -1,5 +1,5 @@
-from sqlalchemy import Column, Integer, Float, ForeignKey, String, UniqueConstraint, Enum
-from sqlalchemy.orm import declarative_base, relationship
+from sqlalchemy import Column, Integer, Float, ForeignKey, String, UniqueConstraint, Enum, Boolean
+from sqlalchemy.orm import declarative_base
 from app.core.database import Base
 import enum
 
@@ -27,7 +27,15 @@ class UserTeam(Base):
     budget_used = Column(Float, nullable=False)
     captain_id = Column(Integer, ForeignKey("players.id"))
     total_points = Column(Integer, default=0)
+    is_confirmed = Column(Boolean, default=False) #<- Añadimos este campo desde "team-setup"
     
     __table_args__ = (
         UniqueConstraint('user_id', 'matchday_id', name='unique_team_per_user_matchday'),
     )
+    
+#Notas:
+
+#-Añadimos el campo is_confirmed a este modelo desde la rama "team-setup" y no desde "db-setup" porque
+#era un cambio pequeño que no demandaria mucho tiempo. 
+#Ademas estamos trabajando en algo extenso y no podiamos hacer commit de nada aun como para
+#trasladarnos hacia la rama "db-setup"
