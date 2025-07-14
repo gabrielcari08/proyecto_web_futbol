@@ -8,3 +8,4 @@ pydantic_settings
 pydantic[email]
 passlib[bcrypt]
 python-jose[cryptography] 
+PyJWT

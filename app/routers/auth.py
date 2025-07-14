@@ -31,21 +31,21 @@ async def login(user_credentials: UserLogin, db: Session = Depends(get_db)):
     #Si no existe el usuario lanzamos una excepcion.
     if not user:
         raise HTTPException(
-            status_code=404,    
+            status_code=401,    
             detail="Credenciales incorrectas"
         )
         
     #Verificamos que la contraseña ingresada coincida con la almacenada y hasheada.
     if not Hash.verify(user_credentials.password, user.hashed_password):
         raise HTTPException(
-            status_code=404,    
+            status_code=401,    
             detail="Credenciales incorrectas"
         )
     
     #Si todo es correcto, generamos el token con el id del usuario.
-    acces_token = create_access_token(data={"user_id": user.id})
+    access_token = create_access_token(user_id=user.id) #Antes: data={"user_id": user.id} 
     
     #Retornamos el token JWT
-    return {"access_token": acces_token, "token_type": "bearer"}
+    return {"access_token": access_token, "token_type": "bearer"}
         
     

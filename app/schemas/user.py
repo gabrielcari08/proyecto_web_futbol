@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, validator
 from app.models.user import RegionEnum
 
 #Esquemas de User
@@ -9,6 +9,18 @@ class UserCreate(BaseModel):
     email: EmailStr
     password: str
     region: RegionEnum #<- Esquema actualizado desde "team-setup"
+    
+    @validator("username") #<- Campo a validar
+    def username_length(cls, v): #<- cls: clase modelo; v: valor del campo
+        if len(v) < 3:
+            raise ValueError("El nombre de usuario debe tener al menos 3 caracteres.")
+        return v
+
+    @validator("password") #<- Campo a validar
+    def password_strength(cls, v): #<- cls: clase modelo; v: valor del campo
+        if len(v) < 8:
+            raise ValueError("La contraseña debe tener al menos 8 caracteres.")
+        return v
 
 #Clase que define el esquema de lo que se le pedira a un usuario cuando inicie sesion.
 class UserLogin(BaseModel):
@@ -27,3 +39,5 @@ class UserResponse(BaseModel):
 class Token(BaseModel):
     access_token: str
     token_type: str
+
+#Se añadieron las funciones validator desde la rama "user-setup"
