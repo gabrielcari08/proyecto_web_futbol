@@ -1,8 +1,9 @@
 #Este archivo gestiona la creacion y verificacion de tokens JWT para el sistema de autenticacion.
+from fastapi import HTTPException
 from jose import JWTError, jwt
 from datetime import datetime, timedelta #Para trabajar con expiracion de tokens
 from app.core.config import settings
-from jwt import PyJWTError
+from jwt import PyJWTError, ExpiredSignatureError
 
 #Constantes que controlan el token
 SECRET_KEY = settings.secret_key
@@ -42,6 +43,13 @@ def verify_access_token(token: str, credentials_exception):
         if user_id is None:
             raise credentials_exception
         return user_id
+    
+    except ExpiredSignatureError:
+        # Token vencido
+        raise HTTPException(
+            status_code=401,
+            detail="El token ha expirado. Por favor inicia sesión nuevamente."
+        )
       
-    except PyJWTError:
+    except JWTError:
         raise credentials_exception

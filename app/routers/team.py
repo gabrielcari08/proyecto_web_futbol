@@ -403,11 +403,10 @@ async def delete_player(player_id: int,
     return {f"Jugador {player_id} eliminado correctamente"}
 
 #Endpoint para que el usuario pueda ver su equipo actual
-@router.get("/view_team")
-async def view_team(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
+@router.get("/get_current_team")
+async def get_current_team(db: Session = Depends(get_db),
+                    current_user: User = Depends(get_current_user)):
+    
     #1. Obtenemos el equipo mas reciente del usuario por jornada activa mediante la funcion,
     user_team = get_user_team_for_active_matchday(db, current_user.id)
     
@@ -519,6 +518,9 @@ async def confirm_team(db: Session = Depends(get_db),
         raise HTTPException(status_code=400, detail="Debes asignar un capitán antes de confirmar el equipo.")
     
     #6. Calcular el presupuesto del equipo
+    #Equivalente a: SELECT sum(value) FROM players 
+    #               JOIN user_team_players ON players.id = user_team_players.player_id 
+    #               WHERE user_team_players.team_id = [ID_DEL_EQUIPO_DEL_USUARIO]
     total_budget_used = db.query(func.sum(Player.value)).\
         join(UserTeamPlayer, Player.id == UserTeamPlayer.player_id).\
         filter(UserTeamPlayer.team_id == user_team.id).\
