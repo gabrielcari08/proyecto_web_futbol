@@ -25,11 +25,10 @@ def get_db():
         yield db
     finally:
         db.close()
-        
-    
+               
 #Establcemos el presupuesto maximo de cada equipo
 MAX_TEAM_BUDGET = 45.0
-        
+
 # Diccionario de formaciones con posiciones requeridas
 FORMATION_POSITIONS = {
     FormationEnum.f_4_4_2: {
@@ -515,7 +514,7 @@ async def view_team_in_matchday(matchday: int,
             {
                 "id": p.id,
                 "name": p.name,
-               "position": p.position,
+                "position": p.position,
                 "club": p.club
             } for p in players_in_team
         ]
