@@ -419,7 +419,6 @@ async def choose_captain(captain_data: ChooseCaptain,
 async def delete_player(player_id: int,
                         db: Session = Depends(get_db),
                         current_user: User = Depends(get_current_user)):
-                        current_user: User = Depends(get_current_user)):
         
     #1. Obtenemos el equipo mas reciente del usuario por jornada activa mediante la funcion,
     user_team = get_user_team_for_active_matchday(db, current_user.id)
