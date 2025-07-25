@@ -8,6 +8,7 @@ from app.models.user_team import UserTeam
 from app.models.player import Player
 from app.models.team_player import UserTeamPlayer
 from app.models.date import TournamentDate
+from app.models.performance import PlayerPerformance
 from app.auth.dependency import get_current_user
 from app.core.database import SessionLocal
 
@@ -25,11 +26,7 @@ def get_db():
         yield db
     finally:
         db.close()
-        
-    
-#Establcemos el presupuesto maximo de cada equipo
-MAX_TEAM_BUDGET = 45.0
-        
+
 # Diccionario de formaciones con posiciones requeridas
 FORMATION_POSITIONS = {
     FormationEnum.f_4_4_2: {
@@ -105,6 +102,62 @@ FORMATION_POSITIONS = {
         PosicionEnum.forward: 1
     }
 }
+
+#Funcion que devuelve el presupuesto disponible a usar para el usuario.
+def calculate_team_budget(db: Session,
+                          user_id: int,
+                          matchday: int):
+
+    #Finzalizamos la ejecucion de la funcion si matchday es 1
+    if matchday <= 1:
+        return 40.0
+
+    #Incializamos team_budget en 40. Presupuesto base para todos los equipos.
+    team_budget = 40.0
+
+    #Obtenemos el numero de la jornada anterior.
+    previous_matchday = matchday - 1
+
+    #1. Obtenemos el equipo del usuario de una jornada anterior.
+    user_team = db.query(UserTeam)\
+        .filter(UserTeam.user_id == user_id,
+                UserTeam.matchday_id == previous_matchday)\
+        .first()
+
+    #Si no se encontro un equipo lanzamos una excepcion.
+    if not user_team:
+        raise HTTPException(status_code=404,
+                            detail="No se encontro un equipo.")
+
+    #2. Contar cuantos jugadores con un rating igual o mayor a 8.5 hay.
+    players_rating = db.query(UserTeamPlayer)\
+        .join(Player, UserTeamPlayer.player_id == Player.id)\
+        .join(PlayerPerformance, Player.id == PlayerPerformance.player_id)\
+        .filter(UserTeamPlayer.team_id == user_team.id,
+                PlayerPerformance.rating >= 8.5,
+                PlayerPerformance.matchday_id == previous_matchday)\
+        .count()        
+
+    #3. Contar cuantos jugadores con MVP = True hay.
+    players_mvp = db.query(UserTeamPlayer)\
+        .join(Player, UserTeamPlayer.player_id == Player.id)\
+        .join(PlayerPerformance, Player.id == PlayerPerformance.player_id)\
+        .filter(UserTeamPlayer.team_id == user_team.id,
+                PlayerPerformance.mvp == True,
+                PlayerPerformance.matchday_id == previous_matchday)\
+        .count() 
+
+    #A players_rating lo multiplicamos por 0.5 (representa 0.5 millones)
+    players_rating *= 0.5
+
+    #A players_mvp lo multiplicamos por 3 (representa 3 millones)
+    players_mvp *= 3
+
+    #A final_budget ahora le asignamos el resultado de la suma. 
+    final_budget = team_budget + players_mvp + players_rating
+
+    #Retornamos final_budget -> el presupuesto disponible que puede usar cada usuario.
+    return final_budget
 
 #Funcion que valida que la posicion este en la formacion.
 def validate_position_for_formation(db: Session,
@@ -287,6 +340,10 @@ async def add_player(player_data: AddPlayer,
         )
         
     #6. Validar presupuesto
+    
+    #Calculamos el presupuesto disponible basado en el rendimiento anterior
+    available_budget = calculate_team_budget(db, current_user.id, user_team.matchday_id)
+    
     #En budget_used almacenamos la suma de players.value
     #Equivalente a: SELECT (SUM(players.value)
     #               FROM players 
@@ -299,9 +356,9 @@ async def add_player(player_data: AddPlayer,
     
     #Si la suma entre el presupuesto usado y el valor del jugador a añadir supera los 45M
     #Lanzamos una excepcion.  
-    if budget_used + exists_player.value > MAX_TEAM_BUDGET:
+    if budget_used + exists_player.value > available_budget:
         raise HTTPException(status_code=400,
-                            detail=f"Presupuesto superado. Disponible: {MAX_TEAM_BUDGET - budget_used}")
+                            detail=f"Presupuesto superado. Disponible: {available_budget - budget_used}")
             
     #Creamos un nuevo jugador en user_team_players
     new_team_player = UserTeamPlayer(
@@ -515,7 +572,7 @@ async def view_team_in_matchday(matchday: int,
             {
                 "id": p.id,
                 "name": p.name,
-               "position": p.position,
+                "position": p.position,
                 "club": p.club
             } for p in players_in_team
         ]
