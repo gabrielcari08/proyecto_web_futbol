@@ -626,6 +626,7 @@ async def view_team_in_matchday(matchday: int,
                 "id": p.id,
                 "name": p.name,
                 "position": p.position,
+                "position": p.position,
                 "club": p.club
             } for p in players_in_team
         ]

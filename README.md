@@ -24,6 +24,8 @@
 - fastapi-setup: rama que se dedica a la estructura para levantar fastapi
 - user-setup: rama en donde construi el registro y autenticacion de usuarios
 - team-setup: rama que sirve para el armado de equipos por el usuario.
+- point-system: rama que se encarga de la logica de puntos.
+- ranking-setup: rama que muestra los rankings regional y general de usuarios.
 
 ### Docker
 
