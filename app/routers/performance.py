@@ -181,13 +181,16 @@ async def calculate_team_points(matchday: int,
         .join(Player, PlayerPerformance.player_id == Player.id)\
         .join(UserTeam, Player.id == UserTeam.captain_id)\
         .filter(UserTeam.user_id == current_user.id,
-                UserTeam.matchday_id == matchday)\
+                PlayerPerformance.matchday_id == matchday)\
         .first()
     
     #Al capitan le sumamos de nuevo sus puntos.
-    if captain:
-        total_points += captain.points_earned
+    if captain is None:
+        raise HTTPException(status_code=400,
+                            detail="No hay rendimientos de jugadores para esta jornada aun.")
         
+    total_points += captain.points_earned
+
     #7. Guardar los cambios
     user_team.total_points = total_points
     
