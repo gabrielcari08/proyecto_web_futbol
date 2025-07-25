@@ -9,6 +9,7 @@ from app.models.player import Player
 from app.models.team_player import UserTeamPlayer
 from app.models.date import TournamentDate
 from app.models.performance import PlayerPerformance
+from app.models.performance import PlayerPerformance
 from app.auth.dependency import get_current_user
 from app.core.database import SessionLocal
 
@@ -418,6 +419,7 @@ async def choose_captain(captain_data: ChooseCaptain,
 async def delete_player(player_id: int,
                         db: Session = Depends(get_db),
                         current_user: User = Depends(get_current_user)):
+                        current_user: User = Depends(get_current_user)):
         
     #1. Obtenemos el equipo mas reciente del usuario por jornada activa mediante la funcion,
     user_team = get_user_team_for_active_matchday(db, current_user.id)
@@ -524,6 +526,58 @@ async def get_current_team(db: Session = Depends(get_db),
             "position": captain.position,
             "club": captain.club
         } if captain else None
+    }
+     
+#Endpoint para ver el equipo del usuario en determinada fecha.
+@router.get("/view_team_in") #<- Ver equipo en...
+async def view_team_in_matchday(matchday: int,
+                                db: Session = Depends(get_db),
+                                current_user: User = Depends(get_current_user)):
+    
+    #1. Obtener el equipo del usuario de "x" fecha
+    #Equivalente a: SELECT * FROM user_teams 
+    #               WHERE user_id = [ID_DEL_USUARIO_ACTUAL] 
+    #               AND matchday_id = [matchday]
+    #               LIMIT 1;
+    user_team = db.query(UserTeam)\
+        .filter(UserTeam.user_id == current_user.id,
+                UserTeam.matchday_id == matchday)\
+        .first()
+        
+    #Si no se encontro el equipo del usuario lanzamos una excepcion
+    if not user_team:
+        raise HTTPException(status_code=404,
+                            detail="No se encontro un equipo.")
+        
+    #Si el equipo no esta confirmado, no puede verse, lanzamos excepcion
+    if not user_team.is_confirmed:
+        raise HTTPException(status_code=400,
+                            detail="No se puede ver este equipo al no estar confirmado.")
+        
+    #2. Obtener los jugadores del equipo del usuario
+    #Equivalente a: SELECT * FROM players 
+    #               JOIN user_team_players ON players.id = user_team_players.player_id
+    #               JOIN user_teams ON user_team_players.team_id = user_teams.id
+    #               WHERE team_id = [ID_DEL_EQUIPO_DEL_USUARIO]
+    players_in_team = db.query(Player)\
+        .join(UserTeamPlayer, Player.id == UserTeamPlayer.player_id)\
+        .join(UserTeam, UserTeamPlayer.team_id == UserTeam.id)\
+        .filter(UserTeam.user_id == current_user.id,
+                UserTeam.matchday_id == matchday)\
+        .all()
+        
+    return {
+        "formation": user_team.formation,
+        "captain": user_team.captain_id,
+        "is_confirmed": user_team.is_confirmed,
+        "players": [
+            {
+                "id": p.id,
+                "name": p.name,
+                "position": p.position,
+                "club": p.club
+            } for p in players_in_team
+        ]
     }
      
 #Endpoint para ver el equipo del usuario en determinada fecha.
