@@ -18,107 +18,92 @@ def get_db():
     finally:
         db.close()
 
-
 #Endpoint para ver el raking de determinada region.
-@router.get("/region", response_model=list[RankingResponse])
+@router.get("/region")
 async def ranking_region(region: RegionEnum,
                          db: Session = Depends(get_db)):
-    
-    #1. Obtenemos la jornada cerrada mas reciente.
-    #Equivalente a: SELECT * FROM matchdays 
-    #               WHERE is_closed = True 
-    #               ORDER BY start DESC 
-    #               LIMIT 1;
-    matchday = db.query(TournamentDate)\
-        .filter(TournamentDate.is_closed == True)\
-        .order_by(TournamentDate.start.desc())\
-        .first()
-    
-    #2. Obtener el ranking de determinada region.
-    #Equivalente a: SELECT * FROM regional_rankings 
-    #               WHERE regional_rankings.region = [region]
-    #               AND matchday_id = [matchday]
-    #               ORDER BY total_points DESC
-    region_ranking = db.query(RegionalRanking)\
-        .filter(RegionalRanking.region == region,
-                RegionalRanking.matchday_id == matchday.id)\
-        .order_by(RegionalRanking.total_points.desc())\
+
+    #Obtenemos los puntos totales de los usuarios de determinada region
+    #Equivalente a: SELECT user_id, SUM(total_points) as user_team_points
+    #               FROM regional_rankings 
+    #               WHERE region = [region] 
+    #               GROUP BY user_id 
+    #               ORDER BY user_team_points DESC
+    regional_ranking = db.query(RegionalRanking.user_id,
+                               func.sum(RegionalRanking.total_points).label('tm'))\
+        .filter(RegionalRanking.region == region)\
+        .group_by(RegionalRanking.user_id)\
+        .order_by(func.sum(RegionalRanking.total_points).desc())\
         .all()
         
-    return region_ranking
-
+    return [
+        {
+            "user_id": user_id,
+            "region": region,
+            "total_points": total_points
+        } for user_id, total_points in regional_ranking
+    ] 
+    
 #Endpoint para ver el ranking de forma general.
-@router.get("/general", response_model=list[RankingResponse])
+@router.get("/general")
 async def ranking_general(db: Session = Depends(get_db)):
     
-    #1. Obtenemos la jornada cerrada mas reciente.
-    #Equivalente a: SELECT * FROM matchdays 
-    #               WHERE is_closed = True 
-    #               ORDER BY start DESC 
-    #               LIMIT 1;
-    matchday = db.query(TournamentDate)\
-        .filter(TournamentDate.is_closed == True)\
-        .order_by(TournamentDate.start.desc())\
-        .first()
-    
-    #2. Obtener el ranking general.
-    #Equivalente a: SELECT * FROM regional_rankings 
-    #               WHERE matchday_id = [matchday]
-    #               ORDER BY total_points DESC
-    ranking_in_general = db.query(RegionalRanking)\
-        .filter(RegionalRanking.matchday_id == matchday.id)\
-        .order_by(RegionalRanking.total_points.desc())\
+    #Obtenemos los puntos totales de los usuarios de forma general.
+    #Equivalente a: SELECT user_id, SUM(total_points) as user_team_points
+    #               FROM regional_rankings 
+    #               GROUP BY user_id 
+    #               ORDER BY user_team_points DESC
+    regional_ranking = db.query(RegionalRanking.user_id,
+                               func.sum(RegionalRanking.total_points).label('tm'))\
+        .group_by(RegionalRanking.user_id)\
+        .order_by(func.sum(RegionalRanking.total_points).desc())\
         .all()
         
-    return ranking_in_general 
-
+    return [
+        {
+            "user_id": user_id,
+            "total_points": total_points
+        } for user_id, total_points in regional_ranking
+    ] 
+    
 #Endpoint para que el usuario pueda ver su posicion en el ranking.
 @router.get("/my_position")
 async def my_position(db: Session = Depends(get_db),
                       current_user: User = Depends(get_current_user)):
     
-    #1. Obtenemos la jornada cerrada mas reciente.
-    #Equivalente a: SELECT * FROM matchdays 
-    #               WHERE is_closed = True 
-    #               ORDER BY start DESC 
-    #               LIMIT 1;
-    matchday = db.query(TournamentDate)\
-        .filter(TournamentDate.is_closed == True)\
-        .order_by(TournamentDate.start.desc())\
-        .first()
-    
-    #2. Obtenemos los puntos del usuario.
-    #Equivalente a: SELECT total_points FROM regional_ranking 
+    #1. Obtenemos los puntos del usuario.
+    #Equivalente a: SELECT SUM(total_points) FROM regional_ranking 
     #               WHERE user_id = [user_id] 
-    #               AND matchday_id = [matchday]
-    user_points = db.query(RegionalRanking.total_points)\
-        .filter(RegionalRanking.user_id == current_user.id,
-                RegionalRanking.matchday_id == matchday.id)\
+    user_points = db.query(func.sum(RegionalRanking.total_points))\
+        .filter(RegionalRanking.user_id == current_user.id)\
         .scalar() or 0
     
     #Lanzamos una excepcion si no se encuantra nada. 
-    if user_points is None:
+    if user_points == 0:
         raise HTTPException(status_code=404,
                         detail="No tienes posición en el ranking. Debes crear un equipo.")
     
-    #3. Obtenemos la posicion del usuario en el ranking general.
-    #Equivalente a: SELECT COUNT(id) FROM regional_ranking 
-    #               WHERE total_points > [user_points]
-    #               AND matchday_id = [matchday]
-    user_general_position = db.query(func.count(RegionalRanking.id))\
-        .filter(RegionalRanking.total_points > user_points,
-                RegionalRanking.matchday_id == matchday.id)\
-        .scalar() or 0
+    #2. Obtenemos la posicion del usuario en el ranking general.
+    #Equivalente a: SELECT COUNT(*) FROM (
+        #           SELECT user_id FROM regional_rankings 
+        #           GROUP BY user_id 
+        #           HAVING SUM(total_points) > [user_points]) 
+    user_general_position = db.query(RegionalRanking.user_id)\
+        .group_by(RegionalRanking.user_id)\
+        .having(func.sum(RegionalRanking.total_points) > user_points)\
+        .count() 
       
-    #4. Obtenemos la posicion del usuario en el ranking regional.
-    #Equivalente a: SELECT COUNT(id) FROM regional_ranking 
-    #               WHERE total_points > [user_points]
-    #               AND matchday_id = [matchday]
-    user_regional_position = db.query(func.count(RegionalRanking.id))\
-        .filter(RegionalRanking.total_points > user_points,
-                RegionalRanking.region == current_user.region,
-                RegionalRanking.matchday_id == matchday.id)\
-        .scalar() or 0
+    #3. Obtenemos la posicion del usuario en el ranking regional.
+    #Equivalente a: SELECT COUNT(*) FROM (
+        #           SELECT user_id FROM regional_rankings 
+        #           WHERE region = [region]
+        #           GROUP BY user_id 
+        #           HAVING SUM(total_points) > [user_points])
+    user_regional_position = db.query(RegionalRanking.user_id)\
+        .filter(RegionalRanking.region == current_user.region)\
+        .group_by(RegionalRanking.user_id)\
+        .having(func.sum(RegionalRanking.total_points) > user_points)\
+        .count() 
         
     return {"General": f"Te encuentras en la posicion: {user_general_position + 1}. " 
             f"Con un total de: {user_points} puntos. ",
