@@ -26,6 +26,7 @@
 - team-setup: rama que sirve para el armado de equipos por el usuario.
 - point-system: rama que se encarga de la logica de puntos.
 - ranking-setup: rama que muestra los rankings regional y general de usuarios.
+- user-history: rama para visualizar datos historicos del usuario.
 
 ### Docker
 
